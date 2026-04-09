@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f5f4f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: #1a1a1a;
+    }
+
+    .card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 0.5px solid rgba(0,0,0,0.15);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .avatar svg {
+      width: 22px;
+      height: 22px;
+      stroke: #1a1a1a;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+
+    p span {
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+
+    .divider {
+      border: none;
+      border-top: 0.5px solid rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-signout {
+      display: inline-block;
+      font-size: 13px;
+      color: #555;
+      text-decoration: none;
+      border: 0.5px solid #ccc;
+      border-radius: 8px;
+      padding: 8px 20px;
+      background: #fafaf8;
+      transition: background 0.15s;
+    }
+
+    .btn-signout:hover { background: #f0efe9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <div class="avatar">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </div>
+
+    <h1>You're logged in</h1>
+    <p>Signed in as <span>{{ session['user'] }}</span></p>
+
+    <hr class="divider" />
+
+    <a href="/logout" class="btn-signout">Sign out</a>
+
+  </div>
+</body>
+</html>
