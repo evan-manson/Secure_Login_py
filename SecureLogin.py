@@ -1,11 +1,17 @@
+from click import pass_obj
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import sqlite3
 import hashlib
 import os
 from dotenv import load_dotenv
 from flask_talisman import Talisman
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
+
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day"])
+
 talisman = Talisman(
     app,
     force_https=False,
@@ -82,18 +88,23 @@ def register():
         password = request.form.get("password")
         pass_check = check_chars(password)
 
+        if len(password) < 8 or len(password) > 64:
+            flash("Password must be between 8 and 64 characters.")
+            return redirect(url_for("register"))
+
         if user_check or pass_check:
-            message = "invalid characters used"
+            flash("Invalid characters used")
             return render_template("register.html", message=message)
         try:
             create_user(name, password)
             return redirect(url_for("login"))
         except sqlite3.IntegrityError:
-            message = "Username already taken!"
+            flash("Username already taken!")
 
     return render_template("register.html", message=message)
 
 @app.route("/", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def login():
     #makes sure there is no user loaded in session
     session.pop("user", None)
@@ -111,7 +122,9 @@ def login():
 
         if user_check or pass_check:
             flash("Invalid characters used")
+            db.close()
             return redirect(url_for("login"))
+
 
         # gets the row in the db that matches the input username
         row = cursor.execute(
