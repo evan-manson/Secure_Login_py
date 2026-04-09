@@ -1,4 +1,3 @@
-from click import pass_obj
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import sqlite3
 import hashlib
@@ -7,6 +6,7 @@ from dotenv import load_dotenv
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
@@ -15,12 +15,18 @@ limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day"])
 talisman = Talisman(
     app,
     force_https=False,
+    session_cookie_secure=False,
+    session_cookie_samesite='Lax',
     content_security_policy={
         'default-src': "'self'",
         'style-src': "'self' 'unsafe-inline'",
-        'script-src': "'self'"
+        'script-src': "'self'",
+        'form-action': "'self'",
     }
 )
+
+csrf = CSRFProtect(app)
+
 
 load_dotenv()
 
@@ -30,8 +36,7 @@ if not secret:
 app.secret_key = secret
 
 # Whitelist of chars
-valid_chars = ('A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,a,b,c,d,e,f,g,h,'
-               'i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,0,1,2,3,4,5,6,7,8,9,_,-,.,!,*,$')
+valid_chars = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.,!*$')
 
 # initializes database
 def init_db():
@@ -78,9 +83,8 @@ def check_chars(word):
 
 # registers new user
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def register():
-    message = ""
-
     if request.method == "POST":
         name = request.form.get("username")
         user_check = check_chars(name)
@@ -88,27 +92,28 @@ def register():
         password = request.form.get("password")
         pass_check = check_chars(password)
 
+        if len(name) < 3 or len(name) > 32:
+            flash("Username must be between 3 and 32 characters.")
+            return redirect(url_for("register"))
+
         if len(password) < 8 or len(password) > 64:
             flash("Password must be between 8 and 64 characters.")
             return redirect(url_for("register"))
 
         if user_check or pass_check:
             flash("Invalid characters used")
-            return render_template("register.html", message=message)
+            return render_template("register.html")
         try:
             create_user(name, password)
             return redirect(url_for("login"))
         except sqlite3.IntegrityError:
             flash("Username already taken!")
 
-    return render_template("register.html", message=message)
+    return render_template("register.html")
 
 @app.route("/", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def login():
-    #makes sure there is no user loaded in session
-    session.pop("user", None)
-
     # gets input of username and password
     if request.method == "POST":
         username = request.form.get("username")
@@ -143,6 +148,7 @@ def login():
             attempt_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
 
             if attempt_hash.hex() == stored_hash:
+                session.clear()
                 session["user"] = username
                 return redirect(url_for("dashboard"))
             else:
@@ -163,7 +169,7 @@ def dashboard():
 @app.route("/logout")
 def logout():
     session.pop("user", None)
-    return render_template("index.html")
+    return redirect(url_for("login"))
 
 
 if __name__ == "__main__":

@@ -207,6 +207,7 @@
 
         <div class="field">
           <label for="username">Username</label>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="text" id="username" name="username" placeholder="Choose your username" required />
         </div>
 
